@@ -1,33 +1,288 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://getbootstrap.com/docs/5.3/assets/css/docs.css" rel="stylesheet">
-    <title>Bootstrap Example</title>
-    <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    <style>
-      .form-control:focus {
-        border-color: black !important;
-        box-shadow: 0 0 0 2px black !important; /* thinner black outline */
-      }
-      .form-control {
-        border-radius: 0.6rem !important; /* slightly more curved edges */
-      }
-    </style>
-  </head>
-  <body class="p-3 m-0 border-0 bd-example m-0 border-0">
-    <!-- Example Code Start-->
-    <div class="form-floating mb-3">
-      <input type="email" class="form-control" id="floatingInput" placeholder="name@example.com">
-      <label for="floatingInput">Email address</label>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MyApp — Sign in</title>
+
+  <!-- Bootstrap (as in your example) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Modern font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --accent: #2563eb; /* blue */
+    }
+    html,body{height:100%}
+    body{
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      margin:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    /* center card */
+    .card-auth{
+      width:100%;
+      max-width:420px;
+      background:var(--card);
+      border-radius:16px;
+      box-shadow: 0 6px 20px rgba(15,23,42,0.06);
+      padding:28px;
+    }
+
+    h1{ font-size:20px; margin-bottom:6px; font-weight:600; }
+    p.lead{ color:var(--muted); margin-bottom:18px; font-size:14px; }
+
+    /* keep your floating style */
+    .form-control:focus {
+      border-color: black !important;
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.06) !important;
+    }
+    .form-control {
+      border-radius: 0.6rem !important;
+      padding: 1rem .75rem;
+      height: calc(2.6rem + 0.8rem);
+    }
+
+    /* skeleton loader three rounded rectangles */
+    .skeleton {
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    .skeleton .bar{
+      height:56px;
+      border-radius:12px;
+      background:linear-gradient(90deg, rgba(255,255,255,0.6), rgba(245,245,245,0.9), rgba(255,255,255,0.6));
+      background-size: 200% 100%;
+      animation: shimmer 1.2s linear infinite;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.03);
+    }
+    @keyframes shimmer{
+      0%{ background-position: -200% 0; }
+      100%{ background-position: 200% 0; }
+    }
+
+    /* toggles and messages */
+    .muted{ color:var(--muted) }
+    .btn-primary{ background:var(--accent); border-color:var(--accent); }
+    .small-note{ font-size:13px; color:var(--muted); margin-top:8px; }
+
+    /* small responsive tweaks */
+    @media (max-width:420px){
+      .card-auth{ padding:20px; border-radius:12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card-auth">
+    <!-- skeleton: visible on load -->
+    <div id="skeleton" class="skeleton" aria-hidden="true">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
     </div>
-    <div class="form-floating">
-      <input type="password" class="form-control" id="floatingPassword" placeholder="Password">
-      <label for="floatingPassword">Password</label>
+
+    <!-- Main content (hidden initially) -->
+    <div id="content" style="display:none;">
+      <h1 id="title">Welcome back</h1>
+      <p class="lead">Sign in with your email</p>
+
+      <div id="alert-placeholder" style="display:none" class="mb-3">
+        <div id="alert" class="alert alert-danger py-2 mb-0" role="alert"></div>
+      </div>
+
+      <!-- Floating inputs like your example -->
+      <div class="form-floating mb-3">
+        <input type="email" id="email" class="form-control" placeholder="name@example.com" autocomplete="email" />
+        <label for="email">Email address</label>
+      </div>
+
+      <div class="form-floating mb-3">
+        <input type="password" id="password" class="form-control" placeholder="Password" autocomplete="current-password" />
+        <label for="password">Password</label>
+      </div>
+
+      <div class="d-grid gap-2 mb-2">
+        <button id="primaryBtn" class="btn btn-primary btn-lg">Login</button>
+      </div>
+
+      <div class="text-center">
+        <button id="toggleBtn" class="btn btn-link small-note">Create new account</button>
+      </div>
+
+      <div class="small-note text-center">By continuing you agree to our Terms & Privacy.</div>
     </div>
-    <!-- Example Code End -->
-  </body>
+  </div>
+
+  <!-- Firebase modular SDK (v10+) - using ESM modules -->
+  <script type="module">
+    // IMPORTANT: replace the config below with your Firebase project's config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDZeKOp52YARhw7kn9KaVqkxSdm-pVFdkM",
+      authDomain: "app-chatmo.firebaseapp.com",
+      projectId: "app-chatmo",
+      // storageBucket, messagingSenderId, appId optional here
+    };
+
+    /* ---------- Import modular Firebase auth functions ---------- */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
+    // init
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // UI elements
+    const skeleton = document.getElementById('skeleton');
+    const content = document.getElementById('content');
+    const title = document.getElementById('title');
+    const alertPlaceholder = document.getElementById('alert-placeholder');
+    const alertBox = document.getElementById('alert');
+    const emailEl = document.getElementById('email');
+    const passwordEl = document.getElementById('password');
+    const primaryBtn = document.getElementById('primaryBtn');
+    const toggleBtn = document.getElementById('toggleBtn');
+
+    // state
+    let mode = 'login'; // or 'signup'
+    function setMode(m){
+      mode = m;
+      if(mode === 'login'){
+        title.textContent = 'Welcome back';
+        primaryBtn.textContent = 'Login';
+        toggleBtn.textContent = 'Create new account';
+      } else {
+        title.textContent = 'Create account';
+        primaryBtn.textContent = 'Create account';
+        toggleBtn.textContent = 'Already have an account? Log in';
+      }
+      clearAlert();
+    }
+
+    function showAlert(msg){
+      alertPlaceholder.style.display = 'block';
+      alertBox.textContent = msg;
+    }
+    function clearAlert(){
+      alertPlaceholder.style.display = 'none';
+      alertBox.textContent = '';
+    }
+
+    // simulate skeleton load then show form
+    window.addEventListener('load', ()=>{
+      // keep skeleton for 1.6 - 2.2s for perceived speed
+      const delay = 1200 + Math.floor(Math.random()*1000);
+      setTimeout(()=> {
+        skeleton.style.display = 'none';
+        content.style.display = 'block';
+      }, delay);
+    });
+
+    // helpers: send ID token to host/native app
+    async function sendIdTokenToHost(user){
+      try {
+        const token = await user.getIdToken(); // Firebase ID token
+        // 1) standard JS channel for webview_flutter (AuthChannel.postMessage)
+        try {
+          if(window.AuthChannel && typeof window.AuthChannel.postMessage === 'function'){
+            window.AuthChannel.postMessage(token);
+            return;
+          }
+        } catch(e){ /* ignore */ }
+
+        // 2) flutter_inappwebview handler (if using that plugin)
+        try {
+          if(window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function'){
+            window.flutter_inappwebview.callHandler('onAuthToken', token);
+            return;
+          }
+        } catch(e){ /* ignore */ }
+
+        // 3) postMessage fallback for other webview bridges (InAppWebView sometimes expects window.postMessage)
+        try {
+          window.postMessage(JSON.stringify({ type:'AUTH_TOKEN', token }), '*');
+          return;
+        } catch(e){ /* ignore */ }
+
+        // 4) fallback redirect (not ideal; uncomment if you use custom URL schemes)
+        // window.location.href = `myapp://auth?token=${encodeURIComponent(token)}`;
+
+        // For development: log (remove in production)
+        console.log('FC: idToken (development):', token);
+      } catch(err){
+        console.error('Failed to get ID token', err);
+      }
+    }
+
+    // main actions
+    primaryBtn.addEventListener('click', async () => {
+      clearAlert();
+      const email = emailEl.value.trim();
+      const password = passwordEl.value;
+
+      if(!email || !password){
+        showAlert('Please enter email and password.');
+        return;
+      }
+
+      primaryBtn.disabled = true;
+      primaryBtn.textContent = (mode === 'login') ? 'Logging in…' : 'Creating…';
+
+      try{
+        let userCred;
+        if(mode === 'login'){
+          userCred = await signInWithEmailAndPassword(auth, email, password);
+        } else {
+          userCred = await createUserWithEmailAndPassword(auth, email, password);
+        }
+        // success: send ID token to host app (for Flutter -> exchange at backend)
+        await sendIdTokenToHost(userCred.user);
+
+        // optionally give feedback in-page (for desktop test)
+        // showAlert('Success! Redirecting…'); // disable for real mobile flow
+      }catch(err){
+        const msg = err?.message || 'Authentication failed';
+        showAlert(msg.replace('Firebase: ', ''));
+      }finally{
+        primaryBtn.disabled = false;
+        primaryBtn.textContent = (mode === 'login') ? 'Login' : 'Create account';
+      }
+    });
+
+    toggleBtn.addEventListener('click', ()=> {
+      setMode(mode === 'login' ? 'signup' : 'login');
+    });
+
+    // Optionally react when auth state changes (if user signs in elsewhere)
+    onAuthStateChanged(auth, (user) => {
+      if(user){
+        // If user already signed in, send token
+        sendIdTokenToHost(user);
+      }
+    });
+
+    // initial mode
+    setMode('login');
+  </script>
+</body>
 </html>
+
+
 
